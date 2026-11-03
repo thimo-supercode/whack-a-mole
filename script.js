@@ -1,9 +1,11 @@
 const GRID_SIZE = 9;
 const ROUND_SECONDS = 30;
 const MOLE_VISIBLE_MS = 800;
+const HIGHSCORE_KEY = 'whackamole-highscore';
 
 const grid = document.getElementById('grid');
 const scoreEl = document.getElementById('score');
+const highscoreEl = document.getElementById('highscore');
 const timeEl = document.getElementById('time');
 const resultEl = document.getElementById('result');
 const restartBtn = document.getElementById('restart');
@@ -15,6 +17,23 @@ let moleTimer = null;
 let countdownTimer = null;
 let activeHole = null;
 let running = false;
+let highscore = loadHighscore();
+
+function loadHighscore() {
+  try {
+    return Number(localStorage.getItem(HIGHSCORE_KEY)) || 0;
+  } catch (e) {
+    return 0;
+  }
+}
+
+function saveHighscore() {
+  try {
+    localStorage.setItem(HIGHSCORE_KEY, highscore);
+  } catch (e) {
+    // localStorage nicht verfügbar – High-Score gilt dann nur für diese Sitzung
+  }
+}
 
 function buildGrid() {
   grid.innerHTML = '';
@@ -58,6 +77,7 @@ function startGame() {
   score = 0;
   timeLeft = ROUND_SECONDS;
   scoreEl.textContent = score;
+  highscoreEl.textContent = highscore;
   timeEl.textContent = timeLeft;
   resultEl.textContent = '';
   restartBtn.style.display = 'none';
@@ -75,7 +95,14 @@ function endGame() {
     activeHole.classList.remove('active');
     activeHole.textContent = '';
   }
-  resultEl.textContent = `Runde vorbei – Punkte: ${score}`;
+  let message = `Runde vorbei – Punkte: ${score}`;
+  if (score > highscore) {
+    highscore = score;
+    saveHighscore();
+    highscoreEl.textContent = highscore;
+    message += ' – 🏆 Neuer High-Score!';
+  }
+  resultEl.textContent = message;
   restartBtn.style.display = 'inline-block';
 }
 
