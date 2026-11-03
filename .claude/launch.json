@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "whackamole",
+      "runtimeExecutable": "powershell",
+      "runtimeArgs": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "C:\\Users\\lenovo\\AppData\\Local\\Temp\\claude\\C--Users-lenovo--claude-spares-spare-dGNNvU\\557f3b3d-a575-49cd-944b-c914cab4d7cf\\scratchpad\\serve.ps1", "-Root", "C:\\Users\\lenovo\\Documents\\WhackAMole Praxis", "-Port", "8080"],
+      "port": 8080
+    }
+  ]
+}
