@@ -3,10 +3,15 @@ const ROUND_SECONDS = 30;
 const MOLE_VISIBLE_MS = 800;
 const HIGHSCORE_KEY = 'whackamole-highscore';
 const LEADERBOARD_SIZE = 5;
+const LEADERBOARD_KEY = 'whackamole-leaderboard';
+const NAME_MAX_LENGTH = 15;
+const DEFAULT_NAME = 'Anonym';
 
 const grid = document.getElementById('grid');
 const leaderboardEl = document.getElementById('leaderboard');
 const leaderboardBody = document.getElementById('leaderboard-body');
+const nameForm = document.getElementById('name-form');
+const nameInput = document.getElementById('player-name');
 const scoreEl = document.getElementById('score');
 const highscoreEl = document.getElementById('highscore');
 const timeEl = document.getElementById('time');
@@ -21,7 +26,28 @@ let countdownTimer = null;
 let activeHole = null;
 let running = false;
 let highscore = loadHighscore();
-let leaderboard = [];
+let leaderboard = loadLeaderboard();
+let testMode = false;   // true nach setTestLeaderboard(): nichts wird gespeichert
+let entrySaved = false; // verhindert doppeltes Eintragen derselben Runde
+let newEntry = null;    // zuletzt eingetragener Eintrag (wird hervorgehoben)
+
+function loadLeaderboard() {
+  try {
+    const data = JSON.parse(localStorage.getItem(LEADERBOARD_KEY));
+    return Array.isArray(data) ? data : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveLeaderboard() {
+  if (testMode) return;
+  try {
+    localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(leaderboard));
+  } catch (e) {
+    // localStorage nicht verfügbar – Bestenliste gilt dann nur für diese Sitzung
+  }
+}
 
 function loadHighscore() {
   try {
@@ -32,6 +58,7 @@ function loadHighscore() {
 }
 
 function saveHighscore() {
+  if (testMode) return;
   try {
     localStorage.setItem(HIGHSCORE_KEY, highscore);
   } catch (e) {
@@ -81,6 +108,29 @@ function getTopEntries() {
     .slice(0, LEADERBOARD_SIZE);
 }
 
+// Aktuelle lokale Zeit als '2026-11-04T21:15:03' (ohne Z, damit das Datum nicht nach UTC rutscht)
+function localDateTime() {
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}` +
+    `T${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+}
+
+// Ein neues Ergebnis ist immer das späteste – bei Punktgleichstand mit Platz 5 reicht es also nicht
+function qualifies(points) {
+  if (points <= 0) return false;
+  const top = getTopEntries();
+  return top.length < LEADERBOARD_SIZE || points > top[top.length - 1].score;
+}
+
+function addEntry(name, points) {
+  const entry = { name, score: points, date: localDateTime() };
+  leaderboard.push(entry);
+  leaderboard = getTopEntries();
+  saveLeaderboard();
+  return entry;
+}
+
 function renderLeaderboard() {
   leaderboardBody.innerHTML = '';
   const entries = getTopEntries();
@@ -97,7 +147,8 @@ function renderLeaderboard() {
 
   entries.forEach((entry, index) => {
     const row = document.createElement('tr');
-    if (index === 0) row.className = 'best';
+    if (index === 0) row.classList.add('best');
+    if (entry === newEntry) row.classList.add('new');
     const values = [`${index + 1}.`, entry.name, entry.score];
     values.forEach((value) => {
       const cell = document.createElement('td');
@@ -127,10 +178,37 @@ function hideLeaderboard() {
   grid.style.display = '';
 }
 
-// Test-Hilfe: Bestenliste mit Dummy-Daten füllen (nur im Speicher)
+function hideNameForm() {
+  nameForm.style.display = 'none';
+  nameInput.value = '';
+}
+
+function submitName(event) {
+  event.preventDefault();
+  if (entrySaved) return;
+  entrySaved = true;
+  const name = nameInput.value.trim().slice(0, NAME_MAX_LENGTH) || DEFAULT_NAME;
+  newEntry = addEntry(name, score);
+  hideNameForm();
+  renderLeaderboard();
+}
+
+// Test-Hilfe: Bestenliste mit Dummy-Daten füllen (nur im Speicher, schaltet Speichern ab)
 // Beispiel: setTestLeaderboard([{ name: 'Anna', score: 27, date: '2026-11-01' }]); endGame();
 function setTestLeaderboard(entries) {
+  testMode = true;
   leaderboard = entries;
+  if (!running) showLeaderboard();
+}
+
+// Test-Hilfe: gespeicherte Bestenliste löschen
+function clearLeaderboard() {
+  leaderboard = [];
+  try {
+    localStorage.removeItem(LEADERBOARD_KEY);
+  } catch (e) {
+    // localStorage nicht verfügbar
+  }
   if (!running) showLeaderboard();
 }
 
@@ -173,7 +251,11 @@ function tick() {
 }
 
 function startGame() {
+  clearInterval(moleTimer);      // falls noch eine Runde läuft: alte Timer stoppen
+  clearInterval(countdownTimer);
   hideLeaderboard();
+  hideNameForm();
+  newEntry = null;
   score = 0;
   timeLeft = ROUND_SECONDS;
   scoreEl.textContent = score;
@@ -204,9 +286,15 @@ function endGame() {
   }
   resultEl.textContent = message;
   restartBtn.style.display = 'inline-block';
+  entrySaved = false;
+  newEntry = null;
+  const canEnter = qualifies(score);
+  nameForm.style.display = canEnter ? 'flex' : 'none';
   showLeaderboard();
+  if (canEnter) nameInput.focus();
 }
 
 restartBtn.addEventListener('click', startGame);
+nameForm.addEventListener('submit', submitName);
 
 startGame();

@@ -9,8 +9,8 @@ Sprache der Oberfläche und Kommunikation: Deutsch.
 Kein Build, keine Abhängigkeiten, keine Tests. `index.html` direkt im Browser öffnen (Doppelklick). Das Spiel startet automatisch beim Laden.
 
 ## Dateien
-- `index.html` – Aufbau: Überschrift, HUD (Punkte `#score`, High-Score `#highscore`, Zeit `#time`), leerer Container `#grid`, Bestenliste `#leaderboard` (Tabelle mit `#leaderboard-body`, anfangs ausgeblendet), Ergebnistext `#result`, Button `#restart`. Bindet `style.css` und `script.js` ein.
-- `style.css` – Aussehen: dunkelvioletter Hintergrund (`#180630`), 3×3-Grid aus runden `.hole`-Elementen (100 px), aktives Loch `.hole.active` gelbgrün (`#E2F068`), `#restart` standardmäßig ausgeblendet. Bestenliste übernimmt Schrift/Farbe des Spiels, Kopfzeile `#E2F068`, bester Eintrag (`tr.best`) fett.
+- `index.html` – Aufbau: Überschrift, HUD (Punkte `#score`, High-Score `#highscore`, Zeit `#time`), leerer Container `#grid`, Bestenliste `#leaderboard` (Namensformular `#name-form` mit `#player-name`, Tabelle mit `#leaderboard-body`, anfangs ausgeblendet), Ergebnistext `#result`, Button `#restart`. Bindet `style.css` und `script.js` ein.
+- `style.css` – Aussehen: dunkelvioletter Hintergrund (`#180630`), 3×3-Grid aus runden `.hole`-Elementen (100 px), aktives Loch `.hole.active` gelbgrün (`#E2F068`), `#restart` standardmäßig ausgeblendet. Bestenliste übernimmt Schrift/Farbe des Spiels, Kopfzeile `#E2F068`, bester Eintrag (`tr.best`) fett, frisch eingetragener Eintrag (`tr.new`) hinterlegt.
 - `script.js` – Spiellogik (Vanilla JS, keine Bibliotheken).
 
 ## Spiellogik (script.js)
@@ -20,6 +20,8 @@ Konstanten oben in der Datei:
 - `MOLE_VISIBLE_MS = 800` – Intervall, in dem der Hamster das Loch wechselt (kleiner = schwerer)
 - `HIGHSCORE_KEY = 'whackamole-highscore'` – Schlüssel für den High-Score in `localStorage`
 - `LEADERBOARD_SIZE = 5` – Anzahl der Einträge in der Bestenliste
+- `LEADERBOARD_KEY = 'whackamole-leaderboard'` – Schlüssel für die Bestenliste in `localStorage` (JSON-Array, max. 5 Einträge `{ name, score, date }`, `date` als lokale Zeit `'JJJJ-MM-TTTHH:MM:SS'` ohne `Z`)
+- `NAME_MAX_LENGTH = 15`, `DEFAULT_NAME = 'Anonym'` – Namenseingabe (leerer Name → „Anonym“)
 
 Funktionen:
 - `loadHighscore()` / `saveHighscore()` – lesen/schreiben den High-Score in `localStorage` (mit `try/catch`, Fallback 0)
@@ -34,15 +36,23 @@ Funktionen:
 - `compareEntries(a, b)` – Sortierregel: mehr Punkte zuerst; bei Gleichstand früherer Zeitpunkt (inkl. Uhrzeit) besser; ungültiges Datum immer schlechter; bei identischem Zeitpunkt alphabetisch nach Name
 - `getTopEntries()` – sortiert `leaderboard` mit `compareEntries`, max. `LEADERBOARD_SIZE`
 - `renderLeaderboard()` / `showLeaderboard()` / `hideLeaderboard()` – Tabelle aufbauen (per `textContent`) und statt `#grid` ein-/ausblenden; ungültige Daten werden als Rohwert rot angezeigt (`td.invalid-date`)
-- `setTestLeaderboard(entries)` – Test-Hilfe: setzt Dummy-Daten nur im Speicher und zeigt sie an, wenn keine Runde läuft
+- `loadLeaderboard()` / `saveLeaderboard()` – lesen/schreiben die Bestenliste in `localStorage` (`try/catch`, Fallback `[]`; im Testmodus wird nicht gespeichert)
+- `qualifies(points)` – `points > 0` und (Liste nicht voll oder mehr Punkte als Platz 5; Gleichstand reicht nicht, da das neue Ergebnis das späteste ist)
+- `addEntry(name, points)` – fügt Eintrag mit `localDateTime()` hinzu, kürzt auf Top 5, speichert
+- `submitName(event)` / `hideNameForm()` – Namensformular; `entrySaved` verhindert Doppel-Eintrag, `newEntry` wird hervorgehoben
+- `setTestLeaderboard(entries)` – Test-Hilfe: setzt Dummy-Daten, schaltet `testMode` ein (weder Bestenliste noch High-Score werden gespeichert, Neuladen bringt echte Daten zurück)
+- `clearLeaderboard()` – Test-Hilfe: löscht die gespeicherte Bestenliste
 
-Zustand liegt in globalen Variablen (`score`, `highscore`, `timeLeft`, `holes`, `activeHole`, `running`, `leaderboard`, Timer-IDs).
+High-Score im HUD (`HIGHSCORE_KEY`) bleibt unabhängig von der Bestenliste.
+
+Zustand liegt in globalen Variablen (`score`, `highscore`, `timeLeft`, `holes`, `activeHole`, `running`, `leaderboard`, `testMode`, `entrySaved`, `newEntry`, Timer-IDs).
 
 ## Bestenliste testen
-Stand Schritt 1: nur Anzeige, keine Namenseingabe, keine Speicherung. Eintragsformat: `{ name: 'Anna', score: 27, date: '2026-11-01' }`. In der Browser-Konsole:
+Eintragsformat: `{ name: 'Anna', score: 27, date: '2026-11-01' }`. In der Browser-Konsole:
 ```js
-setTestLeaderboard([{ name: 'Anna', score: 27, date: '2026-11-01' }]);
-endGame(); // Runde sofort beenden
+setTestLeaderboard([{ name: 'Anna', score: 27, date: '2026-11-01' }]); // Testmodus, speichert nichts
+score = 20; endGame();  // Runde sofort mit 20 Punkten beenden
+clearLeaderboard();     // gespeicherte Liste löschen
 ```
 
 ## Konventionen

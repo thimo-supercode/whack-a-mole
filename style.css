@@ -76,6 +76,39 @@ h1 { margin-bottom: 8px; }
 #leaderboard th { color: #E2F068; }
 #leaderboard tr.best td { font-weight: bold; }
 #leaderboard td.invalid-date { color: #FF6B6B; }
+#leaderboard tr.new td { background: rgba(93, 63, 223, 0.35); }
+
+#name-form {
+  display: none;
+  margin-bottom: 16px;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+#name-form label { width: 100%; }
+
+#name-form input {
+  font-family: inherit;
+  font-size: 15px;
+  padding: 8px 12px;
+  border: 2px solid #5D3FDF;
+  border-radius: 8px;
+  background: #EEE9FD;
+  color: #180630;
+}
+
+#name-form button {
+  font-family: inherit;
+  background: #5D3FDF;
+  color: #F9F9F9;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 15px;
+  cursor: pointer;
+}
 
 #restart {
   font-family: inherit;
