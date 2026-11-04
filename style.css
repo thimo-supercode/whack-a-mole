@@ -54,7 +54,32 @@ h1 { margin-bottom: 8px; }
 
 #result { font-size: 18px; min-height: 24px; margin-top: 16px; }
 
+#leaderboard { display: none; }
+#leaderboard h2 { margin: 0 0 12px; }
+
+#leaderboard table {
+  font-family: inherit;
+  color: inherit;
+  font-size: 16px;
+  margin: 0 auto;
+  border-collapse: collapse;
+  min-width: 340px;
+}
+
+#leaderboard th,
+#leaderboard td {
+  padding: 8px 14px;
+  border-bottom: 1px solid #5D3FDF;
+  font-weight: normal;
+}
+
+#leaderboard th { color: #E2F068; }
+#leaderboard tr.best td { font-weight: bold; }
+#leaderboard td.invalid-date { color: #FF6B6B; }
+
 #restart {
+  font-family: inherit;
+  margin-top: 16px;
   background: #5D3FDF;
   color: #F9F9F9;
   border: none;
