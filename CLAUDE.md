@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 ## Projekt
-Whack-a-Mole ("Hau den Maulwurf") – ein kleines Browser-Spiel als Praxis-/Lernbeispiel für HTML, CSS und JavaScript. Ein Hamster 🐹 erscheint in zufälligen Löchern eines 3×3-Rasters und muss angeklickt werden. Eine Runde dauert 30 Sekunden.
+Whack-A-Hamster ("Hau den Hamster") – ein kleines Browser-Spiel als Praxis-/Lernbeispiel für HTML, CSS und JavaScript. Ein Hamster 🐹 erscheint in zufälligen Löchern eines 3×3-Rasters und muss angeklickt werden. Eine Runde dauert 30 Sekunden.
 
 Sprache der Oberfläche und Kommunikation: Deutsch.
 
