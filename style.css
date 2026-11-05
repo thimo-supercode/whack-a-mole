@@ -131,6 +131,41 @@ h1 { margin-bottom: 8px; }
   cursor: pointer;
 }
 
+#hamster-picker { width: 100%; margin-top: 8px; }
+#hamster-label { display: block; margin-bottom: 8px; }
+
+#hamster-choices {
+  display: grid;
+  grid-template-columns: repeat(3, 80px);
+  gap: 8px;
+  justify-content: center;
+}
+
+#name-form .hamster-choice {
+  width: 80px;
+  height: 80px;
+  padding: 0;
+  background: transparent;
+  border: 3px solid #5D3FDF;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+#name-form .hamster-choice.selected {
+  border-color: #E2F068;
+  transform: scale(1.06);
+}
+
+.hamster-choice img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+#leaderboard td a { color: #E2F068; }
+
 #restart {
   font-family: inherit;
   margin-top: 16px;
