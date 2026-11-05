@@ -13,6 +13,11 @@ const SUPABASE_KEY = 'sb_publishable_gyeEbns8s6tuCMNQuFaYfQ_tVIETSo9';
 const SCORES_URL = `${SUPABASE_URL}/rest/v1/scores`;
 const FETCH_TIMEOUT_MS = 5000;
 
+// Hamsterbilder: die Datenbank-Funktion random_hamsters holt sie von hamsters.youluv.org
+const HAMSTER_COUNT = 6;
+const HAMSTERS_URL = `${SUPABASE_URL}/rest/v1/rpc/random_hamsters`;
+const HAMSTER_URL_PATTERN = /^https:\/\/hamsters\.youluv\.org\/[0-9a-f]{32}$/;
+
 const grid = document.getElementById('grid');
 const leaderboardEl = document.getElementById('leaderboard');
 const leaderboardBody = document.getElementById('leaderboard-body');
@@ -22,6 +27,9 @@ const nameForm = document.getElementById('name-form');
 const nameLabel = document.getElementById('name-label');
 const nameHint = document.getElementById('name-hint');
 const nameInput = document.getElementById('player-name');
+const hamsterPicker = document.getElementById('hamster-picker');
+const hamsterLabel = document.getElementById('hamster-label');
+const hamsterChoices = document.getElementById('hamster-choices');
 const scoreEl = document.getElementById('score');
 const highscoreEl = document.getElementById('highscore');
 const timeEl = document.getElementById('time');
@@ -47,6 +55,7 @@ let activeTab = 'global';     // 'global' | 'local'
 let canEnterLocal = false;
 let canEnterGlobal = false;
 let roundId = 0;              // erkennt Server-Antworten aus einer alten Runde
+let selectedImage = null;     // URL des ausgesuchten Hamsterbilds (oder null)
 
 function loadLeaderboard() {
   try {
@@ -160,7 +169,7 @@ function addEntry(name, points) {
 // ----- Globale Bestenliste (Supabase REST-API) -----
 
 async function loadGlobalLeaderboard() {
-  const url = `${SCORES_URL}?select=id,name,score,created_at` +
+  const url = `${SCORES_URL}?select=id,name,score,created_at,image_url` +
     `&order=score.desc,created_at.asc&limit=${LEADERBOARD_SIZE}`;
   const response = await fetch(url, {
     headers: { apikey: SUPABASE_KEY },
@@ -174,11 +183,14 @@ async function loadGlobalLeaderboard() {
     score: row.score,
     // Mikrosekunden auf Millisekunden kürzen, damit jeder Browser das Datum versteht
     date: String(row.created_at).replace(/(\.\d{3})\d+/, '$1'),
+    imageUrl: HAMSTER_URL_PATTERN.test(row.image_url) ? row.image_url : null,
   }));
 }
 
 // Speichert einen Eintrag auf dem Server und liefert dessen id
-async function saveGlobalEntry(name, points) {
+async function saveGlobalEntry(name, points, imageUrl) {
+  const body = { name, score: points };
+  if (imageUrl) body.image_url = imageUrl;
   const response = await fetch(SCORES_URL, {
     method: 'POST',
     headers: {
@@ -186,12 +198,27 @@ async function saveGlobalEntry(name, points) {
       'Content-Type': 'application/json',
       Prefer: 'return=representation',
     },
-    body: JSON.stringify({ name, score: points }),
+    body: JSON.stringify(body),
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   const [row] = await response.json();
   return row.id;
+}
+
+// Holt zufällige Hamsterbild-URLs über die Datenbank-Funktion random_hamsters
+async function loadHamsterImages() {
+  const response = await fetch(HAMSTERS_URL, {
+    method: 'POST',
+    headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
+    body: '{}',
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const urls = await response.json();
+  return urls
+    .filter((url) => HAMSTER_URL_PATTERN.test(url))
+    .slice(0, HAMSTER_COUNT);
 }
 
 async function refreshGlobalLeaderboard() {
@@ -252,12 +279,24 @@ function renderLeaderboard() {
     if (index === 0) row.classList.add('best');
     const isNew = isGlobal ? entry.id === newGlobalId : entry === newEntry;
     if (isNew) row.classList.add('new');
-    const values = [`${index + 1}.`, entry.name, entry.score];
-    values.forEach((value) => {
-      const cell = document.createElement('td');
-      cell.textContent = value;
-      row.appendChild(cell);
-    });
+    const placeCell = document.createElement('td');
+    placeCell.textContent = `${index + 1}.`;
+    row.appendChild(placeCell);
+    const nameCell = document.createElement('td');
+    if (isGlobal && entry.imageUrl) {
+      const link = document.createElement('a'); // Name verlinkt das ausgesuchte Hamsterbild
+      link.href = entry.imageUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = entry.name;
+      nameCell.appendChild(link);
+    } else {
+      nameCell.textContent = entry.name;
+    }
+    row.appendChild(nameCell);
+    const scoreCell = document.createElement('td');
+    scoreCell.textContent = entry.score;
+    row.appendChild(scoreCell);
     const dateCell = document.createElement('td');
     if (parseDate(entry.date) === null) {
       dateCell.textContent = String(entry.date ?? ''); // Rohwert, rot markiert
@@ -284,6 +323,54 @@ function hideLeaderboard() {
 function hideNameForm() {
   nameForm.style.display = 'none';
   nameInput.value = '';
+  hideHamsterPicker();
+}
+
+function hideHamsterPicker() {
+  hamsterPicker.style.display = 'none';
+  hamsterChoices.innerHTML = '';
+  selectedImage = null;
+}
+
+function selectHamster(button, url) {
+  const wasSelected = selectedImage === url;
+  hamsterChoices.querySelectorAll('.hamster-choice').forEach((b) => b.classList.remove('selected'));
+  selectedImage = wasSelected ? null : url; // erneuter Klick hebt die Auswahl auf
+  if (!wasSelected) button.classList.add('selected');
+}
+
+function renderHamsterChoices(urls) {
+  hamsterChoices.innerHTML = '';
+  urls.forEach((url, index) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'hamster-choice';
+    const img = document.createElement('img');
+    img.src = url;
+    img.alt = `Hamster ${index + 1}`;
+    img.referrerPolicy = 'no-referrer'; // der Bilderserver blockt Anfragen mit fremdem Referer (403)
+    button.appendChild(img);
+    button.addEventListener('click', () => selectHamster(button, url));
+    hamsterChoices.appendChild(button);
+  });
+}
+
+// Zeigt 6 zufällige Hamster zur Auswahl. Klappt das nicht, geht es ohne Bild weiter.
+async function showHamsterPicker() {
+  const thisRound = roundId;
+  hamsterChoices.innerHTML = '';
+  selectedImage = null;
+  hamsterLabel.textContent = 'Lade Hamster …';
+  hamsterPicker.style.display = '';
+  try {
+    const urls = await loadHamsterImages();
+    if (thisRound !== roundId || entrySaved) return; // inzwischen eingetragen oder neue Runde
+    if (urls.length === 0) throw new Error('keine Bilder');
+    hamsterLabel.textContent = 'Such dir einen Hamster aus (optional):';
+    renderHamsterChoices(urls);
+  } catch (e) {
+    if (thisRound === roundId && !entrySaved) hideHamsterPicker();
+  }
 }
 
 function showNameForm() {
@@ -296,6 +383,8 @@ function showNameForm() {
     nameLabel.textContent = 'Du bist in deinen Top 5! Dein Name:';
   }
   nameHint.style.display = canEnterGlobal ? '' : 'none';
+  if (canEnterGlobal) showHamsterPicker();
+  else hideHamsterPicker();
   nameForm.style.display = 'flex';
   nameInput.focus();
 }
@@ -305,12 +394,13 @@ async function submitName(event) {
   if (entrySaved) return;
   entrySaved = true;
   const name = nameInput.value.trim().slice(0, NAME_MAX_LENGTH) || DEFAULT_NAME;
+  const imageUrl = selectedImage; // merken, bevor hideNameForm() die Auswahl zurücksetzt
   hideNameForm();
   if (canEnterLocal) newEntry = addEntry(name, score);
   renderLeaderboard();
   if (canEnterGlobal) {
     try {
-      newGlobalId = await saveGlobalEntry(name, score);
+      newGlobalId = await saveGlobalEntry(name, score, imageUrl);
     } catch (e) {
       resultEl.textContent += ' – Weltweiter Eintrag fehlgeschlagen';
     }
