@@ -10,6 +10,12 @@ Kein Build, keine Abhängigkeiten, keine Tests. `index.html` direkt im Browser �
 
 Die weltweite Bestenliste braucht Internet (Supabase). Beim Öffnen per Doppelklick (`file://`) funktioniert sie ebenfalls, Supabase erlaubt alle Origins.
 
+## Deployment (Vercel)
+- Live unter https://whack-a-hamster.vercel.app (Vercel Hobby-Plan, kostenlos, nur nicht-kommerzielle Nutzung).
+- Per Git-Integration mit dem GitHub-Repo `thimo-supercode/whack-a-mole` verbunden: Jeder Push auf `main` geht automatisch live, andere Branches/PRs bekommen eine eigene Vorschau-URL.
+- Projekteinstellungen: Framework Preset „Other“, Root `./`, kein Build Command, kein Output Directory, keine `vercel.json` – die statischen Dateien werden direkt ausgeliefert.
+- High-Score und lokale Bestenliste liegen im `localStorage` pro Domain, online also getrennt von der lokal geöffneten Datei.
+
 ## Dateien
 - `index.html` – Aufbau: Überschrift, HUD (Punkte `#score`, High-Score `#highscore`, Zeit `#time`), leerer Container `#grid`, Bestenliste `#leaderboard` (Tabs `#tab-global`/`#tab-local`, Namensformular `#name-form` mit `#name-label`, `#player-name`, Hamster-Auswahl `#hamster-picker` (`#hamster-label`, `#hamster-choices`) und Datenschutz-Hinweis `#name-hint`, Tabelle mit `#leaderboard-body`, anfangs ausgeblendet), Ergebnistext `#result`, Button `#restart`. Bindet `style.css` und `script.js` ein.
 - `style.css` – Aussehen: dunkelvioletter Hintergrund (`#180630`), 3×3-Grid aus runden `.hole`-Elementen (100 px), aktives Loch `.hole.active` gelbgrün (`#E2F068`), `#restart` standardmäßig ausgeblendet. Bestenliste übernimmt Schrift/Farbe des Spiels, Kopfzeile `#E2F068`, bester Eintrag (`tr.best`) fett, frisch eingetragener Eintrag (`tr.new`) hinterlegt, aktiver Tab (`.tab.active`) violett gefüllt. Hamster-Auswahl als 3×2-Raster (`.hamster-choice`, 80 px), gewähltes Bild (`.selected`) gelbgrün umrandet; Namen mit Bild-Link (`td a`) gelbgrün.
