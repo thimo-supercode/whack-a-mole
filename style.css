@@ -57,6 +57,26 @@ h1 { margin-bottom: 8px; }
 #leaderboard { display: none; }
 #leaderboard h2 { margin: 0 0 12px; }
 
+.tabs {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.tab {
+  font-family: inherit;
+  background: transparent;
+  color: #F9F9F9;
+  border: 2px solid #5D3FDF;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.tab.active { background: #5D3FDF; }
+
 #leaderboard table {
   font-family: inherit;
   color: inherit;
@@ -88,6 +108,7 @@ h1 { margin-bottom: 8px; }
 }
 
 #name-form label { width: 100%; }
+#name-hint { width: 100%; font-size: 13px; opacity: 0.75; }
 
 #name-form input {
   font-family: inherit;
